@@ -1,694 +1,234 @@
-# UCI Health & Human Activity ML Lab
-
-This repository contains a set of reproducible machine-learning experiments built from classic UCI datasets.  
-The common theme is **risk and behavior in health**:
-
-- Inpatient **diabetes 30-day readmission**
-- Individual **obesity level** from lifestyle and demographic factors
-- **Human activity recognition** from smartphone sensors
-
-Each sub-project follows the same pattern:
-
-1. Fetch and persist the raw data to local CSVs (`01_fetch_and_save.py`)
-2. Train a baseline model with a clean preprocessing pipeline (`02_baseline_model.py`)
-3. Generate diagnostic plots and interpret model behavior (`03_*_analysis_plots.py`)
-
-The goal is to demonstrate disciplined, end-to-end ML practice rather than leaderboard chasing.
+Here’s a cleaned-up, academic, “portfolio-ready” `README.md` that uses badges and actually shows your figures.
+Paste this **as the whole contents** of `README.md` (no extra backticks at the top or bottom).
 
 ---
 
-## Repository Structure
+# DM UCI ML Repo – Clinical Risk & Human Activity Benchmarks
 
-```text
-DM_UCI_ML_REPO/
-  .venv/                         # Local virtual environment (ignored by git)
-  .vscode/                       # Editor configuration (optional, ignored)
-  README.md
-  diabetes_readmission_uci/
-    data/
-      diabetes_uci_features_raw.csv
-      diabetes_uci_targets_raw.csv
-      diabetes_uci_merged_binary.csv
-    reports/
-      figures/                   # Confusion matrix, ROC, etc.
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_diabetes_analysis_plots.py
-    requirements.txt             # Shared dependencies
-  obesity_levels_uci/
-    data/
-      obesity_features_raw.csv
-      obesity_targets_raw.csv
-      obesity_merged.csv
-    reports/
-      figures/
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_obesity_analysis_plots.py
-  har_smartphones_uci/
-    data/
-      UCI_HAR_Dataset.zip        # Original archive (optional, ignored if large)
-      har_features_raw.csv
-      har_targets_raw.csv
-      har_merged.csv
-    reports/
-      figures/
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_har_analysis_plots.py
-Environment and Reproducibility
-All three projects use the same Python toolchain (pandas, scikit-learn, matplotlib, seaborn, shap, jupyterlab).
+End-to-end machine-learning lab built on three classic UCI datasets:
 
-From the repo root:
+* Inpatient **diabetes readmission** (1999–2008, 130 US hospitals)
+* **Obesity levels** from nutrition and lifestyle factors
+* **Human Activity Recognition (HAR)** using smartphone sensors
 
-bash
-Copy code
-# create and activate a local virtual environment
-python -m venv .venv
-.\.venv\Scripts\activate   # PowerShell on Windows
+Each sub-project is fully reproducible:
 
-# install shared dependencies
-pip install -r diabetes_readmission_uci/requirements.txt
-Each project can then be run independently as described below.
+* `01_fetch_and_save.py` – fetch / clean / merge data
+* `02_baseline_model.py` – baseline model with proper preprocessing
+* `03_*_analysis_plots.py` – diagnostic plots and “story” figures saved under `reports/figures/`
 
-1. Diabetes 30-Day Readmission (diabetes_readmission_uci)
-Problem
-Use ten years of inpatient encounters from 130 U.S. hospitals (UCI “Diabetes 130-US hospitals 1999–2008”) to predict whether a hospitalized patient with diabetes will be readmitted within 30 days of discharge.
-
-Task: Binary classification (readmit_30d ∈ {0,1})
-
-Label construction: UCI readmitted field is mapped to
-readmit_30d = 1 for <30 and 0 otherwise.
-
-Challenge: The positive class (30-day readmission) is a relatively rare event; a trivial “never readmit” classifier already achieves high accuracy.
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Fetches UCI dataset via ucimlrepo, separates features/targets, constructs the binary readmit_30d label, and writes:
-
-diabetes_uci_features_raw.csv
-
-diabetes_uci_targets_raw.csv
-
-diabetes_uci_merged_binary.csv
-
-src/02_baseline_model.py
-Baseline logistic regression:
-
-Splits data into train/test with stratification on readmit_30d
-
-One-hot encodes categorical variables and scales numeric columns via a ColumnTransformer
-
-Trains a logistic regression classifier
-
-Prints a full classification_report
-
-src/03_diabetes_analysis_plots.py
-Re-trains a logistic regression model with class weighting and produces:
-
-Normalized confusion matrix
-
-ROC curve
-
-Bar chart of precision/recall/F1 for the positive class
-
-Run:
-
-bash
-Copy code
-cd diabetes_readmission_uci
-
-python .\src\01_fetch_and_save.py
-python .\src\02_baseline_model.py
-python .\src\03_diabetes_analysis_plots.py
-Key Findings (Interpretation)
-Severe class imbalance distorts accuracy.
-The underlying dataset has many more “no readmission” than “readmission” encounters.
-A simple majority classifier achieves high overall accuracy but completely fails to identify patients at risk. The baseline unweighted logistic regression reflects this pattern: very high performance on class 0 with extremely low recall for class 1.
-
-Logistic regression captures signal but prioritizes specificity over sensitivity.
-When class weights are introduced, the model begins to trade some specificity for better sensitivity, but the recall for 30-day readmission remains modest. This is expected: readmission is influenced by unobserved social, behavioral, and post-acute factors that are only partly reflected in structured EHR data.
-
-ROC curve emphasizes threshold choice.
-The ROC curve produced by 03_diabetes_analysis_plots.py lies above the diagonal, indicating discriminatory ability beyond chance. However, depending on the selected operating point, the model can favor:
-
-Higher sensitivity (flag more at-risk patients, accept more false positives), or
-
-Higher specificity (avoid alarm fatigue, miss some true readmissions).
-
-Clinical implication.
-In practice, such a model is more suitable as a screening tool embedded in discharge planning rather than a definitive decision rule. It can help prioritize chart review or case management outreach but should not be used to deny discharge or services.
-
-2. Obesity Levels from Lifestyle and Demographics (obesity_levels_uci)
-Problem
-Predict an individual’s obesity level from demographic information and self-reported lifestyle attributes (physical activity, dietary patterns, screen time, etc.).
-
-Task: Multiclass classification (obesity_level)
-
-Label: The UCI dataset encodes several ordered categories (from underweight through various degrees of overweight and obesity).
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Fetches the UCI obesity dataset via ucimlrepo, saves:
-
-obesity_features_raw.csv
-
-obesity_targets_raw.csv
-
-obesity_merged.csv (features + obesity_level)
-
-src/02_baseline_model.py
-
-Train/test split with stratification on obesity_level
-
-One-hot encoding for categorical attributes (e.g., family history, transportation mode)
-
-Standardization of numeric variables
-
-Multinomial logistic regression with class_weight="balanced"
-
-Prints per-class precision/recall/F1
-
-src/03_obesity_analysis_plots.py
-
-Normalized confusion matrix for all obesity levels
-
-Per-class F1 bar plot
-
-(Optionally) inspection of top positive/negative coefficients for selected classes
-
-Run:
-
-bash
-Copy code
-cd obesity_levels_uci
-
-python .\src\01_fetch_and_save.py
-python .\src\02_baseline_model.py
-python .\src\03_obesity_analysis_plots.py
-Key Findings (Interpretation)
-Model performance reflects the ordered nature of the labels.
-The confusion matrix typically shows that the model rarely confuses extremes (e.g., underweight vs. severe obesity) but struggles more with adjacent categories (e.g., normal vs. overweight). This is consistent with the clinical reality that boundaries between neighboring BMI-based categories are somewhat arbitrary.
-
-Balanced class weights mitigate, but do not eliminate, class imbalance.
-Some obesity levels are under-represented in the dataset. Using class_weight="balanced" helps the model pay attention to minority classes, but performance metrics still vary by class size; minority categories tend to have lower recall and more unstable estimates.
-
-Lifestyle and behavior variables have interpretable effects.
-Examining logistic regression coefficients (behind the scenes of the pipeline) reveals patterns that match domain expectations:
-
-Higher physical activity, shorter screen time, and healthier reported diet patterns shift probability mass toward lower obesity categories.
-
-Sedentary behavior and frequent consumption of calorie-dense foods shift mass toward overweight and obesity categories.
-
-Use case.
-This model is best viewed as an educational and exploratory tool: it highlights how combinations of lifestyle factors associate with weight categories in a labeled dataset. It is not intended to replace clinical assessment or individualized nutritional counseling.
-
-3. Human Activity Recognition from Smartphone Sensors (har_smartphones_uci)
-Problem
-Classify a person’s activity (e.g., walking, sitting, standing) from smartphone accelerometer and gyroscope signals.
-
-Task: Multiclass classification (activity)
-
-Data: UCI Human Activity Recognition Using Smartphones dataset.
-
-Pre-processed time-domain and frequency-domain features are provided in the original UCI archive.
-
-har_merged.csv contains these features plus an activity label.
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Wraps extraction/merging of the UCI HAR dataset into:
-
-har_features_raw.csv
-
-har_targets_raw.csv
-
-har_merged.csv
-
-src/02_baseline_model.py
-
-Train/test split stratified on activity
-
-Standardization of numeric features
-
-Multiclass logistic regression baseline
-
-Full classification report
-
-src/03_har_analysis_plots.py
-
-Normalized confusion matrix across activities
-
-Per-activity F1 bar plot
-
-Two-dimensional PCA embedding colored by activity label, illustrating cluster separation in feature space
-
-Run:
-
-bash
-Copy code
-cd har_smartphones_uci
-
-python .\src\01_fetch_and_save.py
-python .\src\02_baseline_model.py
-python .\src\03_har_analysis_plots.py
-Key Findings (Interpretation)
-Well-engineered features make even simple models competitive.
-The UCI HAR dataset includes carefully engineered features (means, standard deviations, frequency-domain measures). As a result, a relatively simple multinomial logistic regression already achieves strong performance across most activities.
-
-Misclassifications concentrate in physically similar activities.
-The confusion matrix typically shows:
-
-High performance on clearly distinct motions (e.g., walking vs. lying)
-
-More confusion between posturally similar states (e.g., sitting vs. standing), where smartphone orientation and small movements overlap.
-
-PCA reveals structure in the feature space.
-The PCA plot from 03_har_analysis_plots.py demonstrates that activities form partially separable clusters even when compressed into two dimensions. This provides an intuitive visual justification for why linear classifiers can perform well and serves as a baseline for comparison with more complex models (e.g., CNNs or sequence models).
-
-Use case.
-This experiment functions as a baseline HAR benchmark and a staging point for future work with deep learning architectures on raw sensor sequences.
-
-Design Choices and Next Steps
-Across all three projects:
-
-Consistent preprocessing.
-Categorical and numeric features are handled explicitly via a ColumnTransformer, avoiding data leakage and ensuring transformations learned on the training set are applied identically to the test set.
-
-Transparent baselines.
-Logistic regression is intentionally used as a first-line model. It provides:
-
-Convincing baselines for later comparison
-
-Direct interpretability through coefficients and odds ratios
-
-Fast training and straightforward diagnostics
-
-Diagnostics over single metrics.
-Instead of reporting only accuracy, the analysis emphasizes:
-
-Per-class precision, recall, and F1
-
-Confusion matrices
-
-ROC curves (for binary classification)
-
-Visualizations (e.g., PCA embeddings) to reason about feature separability
-
-Potential Extensions
-This repository is structured so that more advanced methods can be layered on without major refactoring:
-
-Replace logistic regression with tree-based methods (Random Forest, XGBoost, LightGBM) or neural networks.
-
-Calibrate and compare different decision thresholds for readmission risk, explicitly modeling the cost of false negatives vs. false positives.
-
-Introduce ordinal classification methods for obesity levels to better respect the ordered nature of the labels.
-
-Apply sequence models (1D CNNs, RNNs, or transformers) directly to the raw HAR time series to study gains over engineered features.
-
-How to Cite or Describe This Work
-When referencing this repository in a portfolio, curriculum vitae, or project report, it can be accurately summarized as:
-
-“Developed an end-to-end machine-learning lab using three UCI datasets (inpatient diabetes readmission, obesity levels, smartphone human activity recognition). Implemented reproducible pipelines with scikit-learn (data ingestion, preprocessing, model training, and evaluation), produced diagnostic visualizations (confusion matrices, ROC curves, PCA embeddings), and provided domain-specific interpretation of model behavior and limitations.”
-
-pgsql
-Copy code
-
-You can paste that directly into `README.md`. If you later grab actual numeric metrics you want highlighted (e.g., specific F1 scores), you can drop a short table into each project section without changing the overall structure.
-::contentReference[oaicite:0]{index=0}
-
-
-
-
-
-
-You said:
-I want the images in the README with explanations. 
-
-
-ChatGPT said:
-
-Thought for 13s
-Nice. Time to make the README look like an actual paper-in-a-repo.
-
-Here’s a full updated README.md with embedded image references and short explanations for each figure. Paths assume the images live where your scripts save them now.
-
-markdown
-Copy code
-# UCI Health & Human Activity ML Lab
-
-This repository contains a set of reproducible machine-learning experiments built from classic UCI datasets.  
-The common theme is **risk and behavior in health**:
-
-- Inpatient **diabetes 30-day readmission**
-- Individual **obesity level** from lifestyle and demographic factors
-- **Human activity recognition** from smartphone sensors
-
-Each sub-project follows the same pattern:
-
-1. Fetch and persist the raw data to local CSVs (`01_fetch_and_save.py`)
-2. Train a baseline model with a clean preprocessing pipeline (`02_baseline_model.py`)
-3. Generate diagnostic plots and interpret model behavior (`03_*_analysis_plots.py`)
-
-The goal is to demonstrate disciplined, end-to-end ML practice rather than leaderboard chasing.
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![pandas](https://img.shields.io/badge/pandas-2.x-150458?logo=pandas\&logoColor=white)](https://pandas.pydata.org/)
+[![scikit-learn](https://img.shields.io/badge/scikit--learn-1.7+-F7931E?logo=scikitlearn\&logoColor=white)](https://scikit-learn.org/)
+[![Matplotlib](https://img.shields.io/badge/Matplotlib-3.x-11557c)](https://matplotlib.org/)
+[![Seaborn](https://img.shields.io/badge/Seaborn-0.13+-3b4d61)](https://seaborn.pydata.org/)
 
 ---
 
-## Repository Structure
+## Repo layout
 
-```text
-DM_UCI_ML_REPO/
-  .venv/                         # Local virtual environment (ignored by git)
-  .vscode/                       # Editor configuration (optional, ignored)
-  README.md
-  diabetes_readmission_uci/
-    data/
-      diabetes_uci_features_raw.csv
-      diabetes_uci_targets_raw.csv
-      diabetes_uci_merged_binary.csv
-    reports/
-      figures/
-        diabetes_confusion_matrix.png
-        diabetes_roc_curve.png
-        diabetes_readmit1_metrics.png
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_diabetes_analysis_plots.py
-    requirements.txt             # Shared dependencies
-  obesity_levels_uci/
-    data/
-      obesity_features_raw.csv
-      obesity_targets_raw.csv
-      obesity_merged.csv
-    reports/
-      figures/
-        obesity_confusion_matrix.png
-        obesity_f1_by_class.png
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_obesity_analysis_plots.py
-  har_smartphones_uci/
-    data/
-      UCI_HAR_Dataset.zip        # Original archive (optional, large)
-      har_features_raw.csv
-      har_targets_raw.csv
-      har_merged.csv
-    reports/
-      figures/
-        har_confusion_matrix.png
-        har_f1_by_activity.png
-        har_pca_embedding.png
-    src/
-      01_fetch_and_save.py
-      02_baseline_model.py
-      03_har_analysis_plots.py
-Environment and Reproducibility
-All three projects use the same Python toolchain (pandas, scikit-learn, matplotlib, seaborn, shap, jupyterlab).
+* `diabetes_readmission_uci/` – 30-day readmission classification
+* `obesity_levels_uci/` – multi-class obesity level prediction
+* `har_smartphones_uci/` – human activity recognition from smartphone data
+
+Each project folder has the same structure:
+
+* `data/` – local CSV snapshots (features, targets, merged)
+* `src/01_fetch_and_save.py` – pulls from UCI (or local zip) and builds `*_merged.csv`
+* `src/02_baseline_model.py` – logistic-regression baseline with `ColumnTransformer` preprocessing
+* `src/03_*_analysis_plots.py` – confusion matrices, ROC curves, PCA, F1 plots
+* `reports/figures/` – saved PNGs used below
+
+---
+
+## How to run everything
 
 From the repo root:
 
-bash
-Copy code
-# create and activate a local virtual environment
+1. Create and activate a virtual environment (once):
+
+```bash
 python -m venv .venv
-.\.venv\Scripts\activate   # PowerShell on Windows
+# Windows PowerShell
+.\.venv\Scripts\activate
+pip install -r diabetes_readmission_uci\requirements.txt
+```
 
-# install shared dependencies
-pip install -r diabetes_readmission_uci/requirements.txt
-Each project can then be run independently as described below.
+*All three projects share this requirements file.*
 
-1. Diabetes 30-Day Readmission (diabetes_readmission_uci)
-Problem
-Use ten years of inpatient encounters from 130 U.S. hospitals (UCI “Diabetes 130-US hospitals 1999–2008”) to predict whether a hospitalized patient with diabetes will be readmitted within 30 days of discharge.
+2. Diabetes – fetch + baseline + plots:
 
-Task: Binary classification (readmit_30d ∈ {0,1})
-
-Label construction: UCI readmitted field is mapped to
-readmit_30d = 1 for <30 and 0 otherwise.
-
-Challenge: The positive class (30-day readmission) is a relatively rare event; a trivial “never readmit” classifier already achieves high accuracy.
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Fetches the UCI dataset via ucimlrepo, separates features/targets, constructs the binary readmit_30d label, and writes:
-
-diabetes_uci_features_raw.csv
-
-diabetes_uci_targets_raw.csv
-
-diabetes_uci_merged_binary.csv
-
-src/02_baseline_model.py
-Baseline logistic regression:
-
-Train/test split with stratification on readmit_30d
-
-One-hot encodes categorical variables and scales numeric columns via a ColumnTransformer
-
-Trains a logistic regression classifier
-
-Prints a full classification_report
-
-src/03_diabetes_analysis_plots.py
-Re-trains a logistic regression model with class weighting and produces:
-
-Normalized confusion matrix
-
-ROC curve
-
-Bar chart of precision/recall/F1 for the positive class
-
-Run:
-
-bash
-Copy code
+```bash
 cd diabetes_readmission_uci
-
 python .\src\01_fetch_and_save.py
 python .\src\02_baseline_model.py
 python .\src\03_diabetes_analysis_plots.py
-Visual Diagnostics
-Confusion Matrix
+```
 
+3. Obesity – fetch + baseline + plots:
 
-The confusion matrix highlights the core challenge: the model is very strong at recognizing no readmission encounters but struggles with the much rarer 30-day readmissions. Even with class weighting, the recall for the positive class remains modest, underscoring the difficulty of predicting readmission from structured inpatient data alone.
-
-ROC Curve
-
-
-The ROC curve lies consistently above the diagonal, confirming that the model is substantially better than random guessing. However, the slope near clinically relevant operating points shows a clear trade-off: improving sensitivity for readmissions comes at the cost of more false alarms, which has implications for care-management workload and alert fatigue.
-
-Positive-Class Metrics
-
-
-This bar chart isolates precision, recall, and F1 for the readmit=1 class. It makes explicit that the model is more precise than sensitive: when it predicts a readmission it is often correct, but it fails to catch many true positives. This pattern supports using the model as a screening aid rather than as a gatekeeping tool.
-
-Key Findings (Interpretation)
-Severe class imbalance distorts accuracy.
-High overall accuracy is largely driven by the dominant “no readmission” class; without class-aware evaluation, risk models can look deceptively strong.
-
-Logistic regression captures signal but underestimates complex risk.
-Adding class weights improves sensitivity but still leaves a large pool of missed readmissions, reflecting the role of non-captured social and behavioral determinants.
-
-Threshold selection is a policy decision, not a purely technical one.
-ROC and metric plots show that moving the threshold changes who is flagged for follow-up and how many false positives case managers must handle.
-
-Clinical implication.
-The model is best interpreted as a prioritization tool that helps identify higher-risk discharges for review, not as an automated decision-maker.
-
-2. Obesity Levels from Lifestyle and Demographics (obesity_levels_uci)
-Problem
-Predict an individual’s obesity level from demographic information and self-reported lifestyle attributes (physical activity, dietary patterns, screen time, etc.).
-
-Task: Multiclass classification (obesity_level)
-
-Label: The UCI dataset encodes several ordered categories (from underweight through various degrees of overweight and obesity).
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Fetches the UCI obesity dataset via ucimlrepo, saves:
-
-obesity_features_raw.csv
-
-obesity_targets_raw.csv
-
-obesity_merged.csv (features + obesity_level)
-
-src/02_baseline_model.py
-
-Train/test split with stratification on obesity_level
-
-One-hot encoding for categorical attributes (e.g., family history, transportation mode)
-
-Standardization of numeric variables
-
-Multinomial logistic regression with class_weight="balanced"
-
-Prints per-class precision/recall/F1
-
-src/03_obesity_analysis_plots.py
-
-Normalized confusion matrix for all obesity levels
-
-Per-class F1 bar plot
-
-Run:
-
-bash
-Copy code
-cd obesity_levels_uci
-
+```bash
+cd ..\obesity_levels_uci
 python .\src\01_fetch_and_save.py
 python .\src\02_baseline_model.py
 python .\src\03_obesity_analysis_plots.py
-Visual Diagnostics
-Confusion Matrix
+```
 
+4. HAR – fetch (from local zip) + baseline + plots:
 
-The confusion matrix shows that errors cluster between adjacent categories (e.g., normal vs. overweight), while extreme categories (underweight vs. severe obesity) are more clearly separated. This mirrors how BMI cut points behave in practice: boundaries between neighbors are somewhat arbitrary and inherently noisy.
-
-Per-Class F1 Scores
-
-
-The F1 plot exposes how performance varies by class frequency. Common categories achieve stronger and more stable F1 scores, while rare obesity levels are harder to estimate reliably even with balanced class weights. This is a reminder that class imbalance directly shapes which predictions can be trusted most.
-
-Key Findings (Interpretation)
-Ordinal structure matters.
-Most misclassifications land one category away from the true label, suggesting that models which explicitly encode the ordered nature of obesity (e.g., ordinal regression) would be a natural next step.
-
-Lifestyle variables behave as expected.
-Examination of logistic coefficients (not shown in the README but available in code) confirms intuitive relationships: higher activity and healthier eating patterns push probabilities toward lower obesity levels.
-
-Use case.
-This model is well-suited for scenario analysis and education—illustrating how clusters of behaviors relate to weight categories—rather than for individualized clinical decision-making.
-
-3. Human Activity Recognition from Smartphones (har_smartphones_uci)
-Problem
-Classify a person’s activity (e.g., walking, sitting, standing) from smartphone accelerometer and gyroscope signals.
-
-Task: Multiclass classification (activity)
-
-Data: UCI Human Activity Recognition Using Smartphones dataset.
-har_merged.csv contains engineered time- and frequency-domain features plus an activity label.
-
-Pipeline
-Scripts:
-
-src/01_fetch_and_save.py
-Wraps extraction/merging of the UCI HAR dataset into:
-
-har_features_raw.csv
-
-har_targets_raw.csv
-
-har_merged.csv
-
-src/02_baseline_model.py
-
-Train/test split stratified on activity
-
-Standardization of numeric features
-
-Multiclass logistic regression baseline
-
-Full classification report
-
-src/03_har_analysis_plots.py
-
-Normalized confusion matrix across activities
-
-Per-activity F1 bar plot
-
-Two-dimensional PCA embedding colored by activity label
-
-Run:
-
-bash
-Copy code
-cd har_smartphones_uci
-
+```bash
+cd ..\har_smartphones_uci
 python .\src\01_fetch_and_save.py
 python .\src\02_baseline_model.py
 python .\src\03_har_analysis_plots.py
-Visual Diagnostics
-Confusion Matrix
+```
 
+Scripts are designed to be re-runnable: if the data already exist, they overwrite or reuse the same CSVs and figures.
 
-The confusion matrix shows that the baseline model distinguishes most activities very well, with misclassifications concentrated among posturally similar states (for example, sitting vs. standing). This is consistent with what we would expect from a single smartphone worn at the waist.
+---
 
-Per-Activity F1 Scores
+## Project 1 – Diabetes 30-Day Readmission
 
+**Folder:** `diabetes_readmission_uci/`
+**Goal:** Predict whether an inpatient diabetic encounter will be readmitted within 30 days (binary classification).
 
-The F1 score chart confirms the pattern from the confusion matrix: dynamic activities such as walking or walking upstairs are easier to classify, whereas static or low-motion activities produce more overlap in feature space and thus lower F1.
+### Key figures
 
-PCA Embedding
+**Normalized confusion matrix**
 
+![Diabetes confusion matrix](diabetes_readmission_uci/reports/figures/diabetes_confusion_matrix.png)
 
-The PCA plot projects high-dimensional sensor features into two dimensions and colors points by activity. Distinct clusters emerge for many activities, visually justifying why a simple linear classifier already performs strongly and providing an intuitive baseline for future deep-learning approaches on raw time series.
+The model is very accurate for the majority “no readmission” class and misses many true readmissions. This is the classic high-accuracy / low-sensitivity pattern in imbalanced clinical data.
 
-Key Findings (Interpretation)
-Feature engineering pays off.
-UCI’s pre-engineered features allow a straightforward multinomial logistic regression to perform surprisingly well, making this dataset ideal for didactic comparisons between classical ML and deep learning.
+**ROC curve**
 
-Confusion patterns reflect physical similarity.
-Errors primarily occur where the underlying motions are genuinely similar, not because the model is random; this is a useful sanity check when building applied HAR systems.
+![Diabetes ROC](diabetes_readmission_uci/reports/figures/diabetes_roc_curve.png)
 
-Use case.
-The experiment serves as a baseline HAR benchmark and a clean starting point for extending into CNN/RNN/transformer models on raw accelerometer sequences.
+The ROC curve sits comfortably above the diagonal “chance” line, confirming that there is real signal. Different probability thresholds will strongly change the balance between missed readmissions and false alarms.
 
-Design Choices and Next Steps
-Across all three projects:
+**Positive-class metrics (readmit = 1)**
 
-Consistent preprocessing.
-Categorical and numeric features are handled explicitly via ColumnTransformer, avoiding data leakage and ensuring transformations learned on the training set are applied identically to the test set.
+![Diabetes readmit metrics](diabetes_readmission_uci/reports/figures/diabetes_readmit1_metrics.png)
 
-Transparent baselines.
-Logistic regression is intentionally used as a first-line model. It provides:
+Precision, recall, and F1 for the readmission class make the trade-offs explicit: the baseline logistic model is conservative and under-detects readmissions, which is unacceptable if the priority is patient safety rather than workload minimization.
 
-Convincing baselines for later comparison
+### Interpretation
 
-Direct interpretability through coefficients and odds ratios
+* Dataset is **heavily imbalanced**; most patients are not readmitted within 30 days.
+* Logistic regression with balanced class weights and proper preprocessing still struggles to achieve high recall on readmissions.
+* Clinical use would require:
 
-Fast training and straightforward diagnostics
+  * Careful threshold tuning driven by cost of missed readmissions vs false positives.
+  * Stronger models (e.g., gradient boosting) and richer features (labs, vitals, prior utilization).
 
-Diagnostics over single metrics.
-Instead of reporting only accuracy, the analysis emphasizes:
+This project functions as a transparent baseline and a controlled environment for experimenting with risk thresholds and calibration.
 
-Per-class precision, recall, and F1
+---
 
-Confusion matrices
+## Project 2 – Obesity Levels
 
-ROC curves (for binary classification)
+**Folder:** `obesity_levels_uci/`
+**Goal:** Multi-class classification of obesity category from diet, activity, and demographic variables.
 
-Visualizations (e.g., PCA embeddings) to reason about feature separability
+### Key figures
 
-Potential Extensions
-The current structure makes it easy to plug in more advanced methods:
+**Normalized confusion matrix**
 
-Tree-based ensembles or gradient boosting for tabular data
+![Obesity confusion matrix](obesity_levels_uci/reports/figures/obesity_confusion_matrix.png)
 
-Ordinal classification methods for obesity levels
+Misclassifications occur mainly between adjacent categories (e.g., overweight vs obesity type I), which matches the inherently fuzzy boundaries of BMI-like labels.
 
-Cost-sensitive and threshold-calibrated models for readmission risk
+**Per-class F1 scores**
 
-CNN/RNN/transformer models operating directly on raw HAR time series
+![Obesity F1 by class](obesity_levels_uci/reports/figures/obesity_f1_by_class.png)
 
-How to Describe This Work
-When referencing this repository in a portfolio, curriculum vitae, or project report, it can be accurately summarized as:
+The model performs best for clearly separated extremes (normal weight and highest obesity levels) and worst where categories are clinically similar.
 
-“Developed an end-to-end machine-learning lab using three UCI datasets (inpatient diabetes readmission, obesity levels, smartphone human activity recognition). Implemented reproducible pipelines with scikit-learn (data ingestion, preprocessing, model training, and evaluation), produced diagnostic visualizations (confusion matrices, ROC curves, PCA embeddings), and provided domain-specific interpretation of model behavior and limitations.”
+### Interpretation
+
+* Features capture **lifestyle patterns** (diet, activity, habits) rather than direct clinical biomarkers.
+* One-hot encoding + balanced logistic regression:
+
+  * Distinguishes “obviously healthy” and “obviously unhealthy” profiles effectively.
+  * Shows expected ambiguity for intermediate states where measurement error and labeling noise are highest.
+* This is a good sandbox for:
+
+  * **Ordinal** modeling (respecting the ordered nature of obesity levels).
+  * Fairness and subgroup analysis across age, sex, or socioeconomic markers.
+
+---
+
+## Project 3 – Human Activity Recognition (Smartphones)
+
+**Folder:** `har_smartphones_uci/`
+**Goal:** Predict human activity (walking, sitting, standing, lying, etc.) from smartphone accelerometer/gyroscope features.
+
+### Key figures
+
+**Normalized confusion matrix**
+
+![HAR confusion matrix](har_smartphones_uci/reports/figures/har_confusion_matrix.png)
+
+The baseline model is strong on clearly distinct movements (e.g., walking vs lying) and weaker on posturally similar states (sitting vs standing), which often look similar to the sensors.
+
+**Per-activity F1 scores**
+
+![HAR F1 by activity](har_smartphones_uci/reports/figures/har_f1_by_activity.png)
+
+Activities with unique motion signatures achieve very high F1; more static activities show lower scores, revealing where additional temporal modeling is needed.
+
+**PCA embedding of feature space**
+
+![HAR PCA embedding](har_smartphones_uci/reports/figures/har_pca_embedding.png)
+
+The PCA projection shows clusters for several activities, with partial overlap for others. This visually confirms where the feature space cleanly separates behavior and where it does not.
+
+### Interpretation
+
+* The UCI HAR dataset exposes carefully engineered **time- and frequency-domain features**.
+* Even a plain logistic regression with scaling produces a surprisingly strong baseline, validating the feature engineering.
+* Remaining errors are concentrated where:
+
+  * Activities are posturally similar.
+  * Smartphone orientation or placement introduces ambiguity.
+
+This project serves as a baseline HAR benchmark and a clean starting point for sequence models (CNNs, RNNs, transformers) that operate directly on raw sensor streams.
+
+---
+
+## Design choices across all projects
+
+* **Consistent preprocessing**
+  Shared `ColumnTransformer` pipelines handle categorical and numeric features explicitly, avoiding leakage and making cross-dataset comparisons meaningful.
+
+* **Transparent baselines**
+  Logistic regression is used deliberately as a first-line model:
+
+  * Interpretable coefficients and odds ratios.
+  * Fast training and straightforward diagnostics.
+  * Clear baselines that more complex models should be expected to beat.
+
+* **Diagnostics over single numbers**
+  The emphasis is on *why* a model behaves as it does:
+
+  * Per-class precision, recall, and F1 rather than a single accuracy value.
+  * Confusion matrices and ROC curves for error structure.
+  * PCA embeddings for qualitative separation in feature space.
+
+---
+
+## Possible extensions
+
+* Replace logistic regression with tree-based methods (Random Forest, XGBoost, LightGBM) or neural networks.
+* Calibrate and compare decision thresholds for readmission risk under explicit cost assumptions.
+* Introduce ordinal models for obesity levels to respect clinical ordering.
+* Apply sequence models directly to the raw HAR time series for gait and posture analysis.
+* Add SHAP or other explainability tools to identify features that drive risk and misclassification.
+
+---
+
+## How to describe this work
+
+> Developed an end-to-end machine-learning lab using three UCI datasets (hospital diabetes readmission, obesity levels, and smartphone-based human activity recognition). Implemented reproducible data pipelines, transparent logistic-regression baselines, and diagnostic visualizations (confusion matrices, ROC curves, PCA) using a shared, research-friendly project structure.
+
+---
