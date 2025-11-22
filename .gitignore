@@ -1,0 +1,22 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+*/.venv/
+
+# Jupyter checkpoints
+*.ipynb_checkpoints/
+
+# VS Code settings
+.vscode/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Archives
+*.zip
