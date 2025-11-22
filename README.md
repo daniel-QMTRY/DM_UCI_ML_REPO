@@ -1,5 +1,3 @@
-Here’s a cleaned-up, academic, “portfolio-ready” `README.md` that uses badges and actually shows your figures.
-Paste this **as the whole contents** of `README.md` (no extra backticks at the top or bottom).
 
 ---
 
@@ -169,7 +167,7 @@ The model performs best for clearly separated extremes (normal weight and highes
 
 ![HAR confusion matrix](har_smartphones_uci/reports/figures/har_confusion_matrix.png)
 
-The baseline model is strong on clearly distinct movements (e.g., walking vs lying) and weaker on posturally similar states (sitting vs standing), which often look similar to the sensors.
+The baseline model is strong at distinguishing clearly distinct movements (e.g., walking vs lying) but weaker at distinguishing posturally similar states (sitting vs standing), which often look similar to the sensors.
 
 **Per-activity F1 scores**
 
@@ -199,7 +197,7 @@ This project serves as a baseline HAR benchmark and a clean starting point for s
 ## Design choices across all projects
 
 * **Consistent preprocessing**
-  Shared `ColumnTransformer` pipelines handle categorical and numeric features explicitly, avoiding leakage and making cross-dataset comparisons meaningful.
+  Shared `ColumnTransformer` pipelines explicitly handle both categorical and numeric features, avoiding leakage and making cross-dataset comparisons meaningful.
 
 * **Transparent baselines**
   Logistic regression is used deliberately as a first-line model:
@@ -217,7 +215,6 @@ This project serves as a baseline HAR benchmark and a clean starting point for s
 
 ---
 
-## Possible extensions
 
 * Replace logistic regression with tree-based methods (Random Forest, XGBoost, LightGBM) or neural networks.
 * Calibrate and compare decision thresholds for readmission risk under explicit cost assumptions.
@@ -227,7 +224,6 @@ This project serves as a baseline HAR benchmark and a clean starting point for s
 
 ---
 
-## How to describe this work
 
 > Developed an end-to-end machine-learning lab using three UCI datasets (hospital diabetes readmission, obesity levels, and smartphone-based human activity recognition). Implemented reproducible data pipelines, transparent logistic-regression baselines, and diagnostic visualizations (confusion matrices, ROC curves, PCA) using a shared, research-friendly project structure.
 
